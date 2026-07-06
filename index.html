@@ -183,6 +183,43 @@
   .modalbtns button { min-height:52px; padding:0 22px; border-radius:13px; font-size:15px; font-weight:750; }
   .mcancel { border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:var(--gray-300); }
   .mconfirm { border:none; background:var(--orange); color:#1a1206; font-weight:800; }
+
+  /* ═══ PHONE (iPhone portrait) ═══ */
+  @media (max-width: 640px) {
+    .slide { justify-content:flex-start; padding:14vh 22px 130px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    .title-xl { font-size:42px; }
+    .title-md { font-size:25px; margin-bottom:18px; }
+    .sub { font-size:15px; }
+    .eyebrow { font-size:10px; letter-spacing:.14em; }
+    .cards { gap:12px; }
+    .card { padding:18px; }
+    .flow { flex-direction:column; gap:8px; }
+    .flow .arrow { transform:rotate(90deg); align-self:center; margin:-2px 0; }
+    .script li { font-size:14px; gap:12px; padding:12px 0; }
+    .cta { width:100%; justify-content:center; }
+    #swipe-hint { display:none; }
+    .demobar { gap:8px; padding:10px 12px; padding-top:max(10px, env(safe-area-inset-top)); }
+    .demobar .backbtn { min-height:40px; padding:0 12px; font-size:13px; }
+    .demobar .crumbs { font-size:10px; }
+    .demobar .crumb { padding:4px 6px; }
+    .mailwrap, .dashwrap, .adwrap { padding-left:10px; padding-right:10px; }
+    .mailhead { padding:16px 16px 14px; }
+    .mailhead .subj { font-size:16px; }
+    .mailbody { padding:18px 16px 22px; }
+    .mailitem { padding:14px 14px; }
+    .dashtitle h1 { font-size:19px; }
+    .tunebtn { width:100%; }
+    .tile { padding:12px 14px; }
+    .tile .big { font-size:25px; }
+    .dbody { padding-left:18px; }
+    .adhero { align-items:stretch; flex-direction:column; }
+    .magicbtn { width:100%; }
+    .routerow { flex-direction:column; align-items:flex-start; gap:3px; }
+    .routerow .rv { text-align:left; }
+    .modal { padding:18px; }
+    .modalbtns button { flex:1; }
+    .savebar { gap:10px; }
+  }
 </style>
 </head>
 <body>
