@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FIG Email Intelligence — Demo for Chris</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  :root {
+    --navy:#0d1b2a; --navy-mid:#162447; --navy-light:#1f3461; --line:rgba(255,255,255,.09);
+    --orange:#e8824a; --orange-lt:#f4a261;
+    --white:#fff; --gray-300:#c9d2de; --gray-400:#9ca3af; --gray-600:#6b7280;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --blue:#60a5fa;
+  }
+  html, body { height:100%; font-family:'Inter',sans-serif; background:#060c14; color:var(--white); }
+  body { overflow:hidden; }
+  button { font-family:inherit; cursor:pointer; }
+
+  /* ═══ VIEWS ═══ */
+  .view { position:absolute; inset:0; display:none; }
+  .view.active { display:block; }
+  .scrollview { overflow-y:auto; -webkit-overflow-scrolling:touch; }
+
+  /* ═══ DECK ═══ */
+  #view-deck { overflow:hidden; }
+  .slide { position:absolute; inset:0; display:none; flex-direction:column; justify-content:center; padding:0 8vw; }
+  .slide.active { display:flex; }
+  #progress-bar { position:fixed; top:0; left:0; height:4px; background:var(--orange); transition:width .35s ease; z-index:200; }
+  #deck-nav { position:fixed; bottom:max(20px, env(safe-area-inset-bottom)); right:20px; display:flex; gap:10px; z-index:200; }
+  #deck-nav button { width:54px; height:54px; border-radius:50%; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#fff; font-size:20px; backdrop-filter:blur(8px); }
+  #deck-nav button:active { background:rgba(255,255,255,.25); }
+  #counter { position:fixed; bottom:max(38px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); font-size:11px; font-weight:600; letter-spacing:.06em; color:rgba(255,255,255,.3); z-index:200; }
+  #swipe-hint { position:fixed; bottom:max(38px, env(safe-area-inset-bottom)); left:24px; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.25); z-index:200; }
+  @keyframes up { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+  .slide.active .a { animation:up .45s ease both; }
+  .d1{animation-delay:.05s} .d2{animation-delay:.15s} .d3{animation-delay:.25s} .d4{animation-delay:.35s} .d5{animation-delay:.45s}
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; }
+  .title-xl { font-size:clamp(40px,6vw,72px); font-weight:900; line-height:1.04; letter-spacing:-.03em; }
+  .title-md { font-size:clamp(26px,3.4vw,44px); font-weight:800; line-height:1.12; letter-spacing:-.02em; margin-bottom:24px; }
+  .sub { font-size:clamp(15px,1.7vw,19px); color:var(--gray-400); line-height:1.65; max-width:660px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:10px; }
+  .card { background:var(--navy-mid); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  .card .num { font-size:11px; font-weight:800; letter-spacing:.14em; color:var(--orange); margin-bottom:10px; }
+  .card h3 { font-size:17px; font-weight:750; margin-bottom:8px; line-height:1.3; }
+  .card p { font-size:14px; color:var(--gray-400); line-height:1.6; }
+  .flow { display:flex; align-items:stretch; gap:10px; margin:6px 0 24px; flex-wrap:wrap; }
+  .flow .step { flex:1; min-width:140px; background:var(--navy-mid); border:1px solid var(--line); border-radius:14px; padding:18px; font-size:13.5px; color:var(--gray-400); line-height:1.5; }
+  .flow .step b { display:block; color:var(--white); font-size:14px; margin-bottom:5px; }
+  .flow .arrow { align-self:center; color:var(--orange); font-size:20px; font-weight:800; }
+  .risk { border-left:3px solid var(--red); padding:6px 0 6px 18px; font-size:15px; color:var(--gray-400); line-height:1.65; max-width:660px; }
+  .risk b { color:var(--white); }
+  .cta { display:inline-flex; align-items:center; gap:10px; margin-top:28px; background:var(--orange); color:#1a1206; font-weight:800; font-size:17px; padding:18px 32px; border-radius:14px; border:none; text-decoration:none; min-height:56px; }
+  .cta:active { background:var(--orange-lt); }
+  .script { list-style:none; margin-top:4px; max-width:680px; }
+  .script li { display:flex; gap:16px; padding:14px 0; border-top:1px solid var(--line); font-size:15.5px; color:var(--gray-400); line-height:1.55; }
+  .script li:first-child { border-top:none; }
+  .script .n { color:var(--orange); font-weight:800; font-size:14px; min-width:20px; padding-top:1px; }
+  .script b { color:var(--white); }
+
+  /* ═══ DEMO CHROME (breadcrumb bar on email/dashboard/controls) ═══ */
+  .demobar { position:sticky; top:0; z-index:150; display:flex; align-items:center; gap:12px; padding:12px 16px; padding-top:max(12px, env(safe-area-inset-top)); background:rgba(6,12,20,.94); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
+  .demobar .backbtn { min-height:44px; padding:0 16px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.07); color:#fff; font-size:14px; font-weight:650; }
+  .demobar .crumbs { display:flex; gap:4px; align-items:center; font-size:12px; font-weight:700; letter-spacing:.04em; color:var(--gray-600); flex-wrap:wrap; }
+  .demobar .crumb { padding:6px 10px; border-radius:8px; }
+  .demobar .crumb.on { color:#1a1206; background:var(--orange); }
+  .demobar .sep { color:var(--gray-600); }
+
+  /* ═══ EMAIL VIEW ═══ */
+  #view-email { background:#0b1420; }
+  .mailwrap { max-width:720px; margin:0 auto; padding:22px 16px 80px; }
+  .mailcard { background:#ffffff; color:#1f2937; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.5); }
+  .mailhead { padding:20px 24px 16px; border-bottom:1px solid #e9ecef; }
+  .mailhead .subj { font-size:18px; font-weight:800; letter-spacing:-.01em; color:#111827; }
+  .mailhead .meta { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .mailhead .avatar { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#e8824a,#c9581f); color:#fff; font-weight:800; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .mailhead .fromline { font-size:13.5px; color:#374151; line-height:1.5; }
+  .mailhead .fromline b { color:#111827; }
+  .mailbody { padding:22px 24px 26px; }
+  .mb-intro { font-size:14px; color:#4b5563; line-height:1.6; margin-bottom:18px; }
+  .sevgroup { margin-bottom:20px; }
+  .sevlabel { display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin-bottom:10px; }
+  .dot { width:10px; height:10px; border-radius:50%; flex:none; }
+  .dot.red{background:var(--red)} .dot.amber{background:var(--amber)} .dot.gray{background:#9ca3af}
+  .sevlabel.red{color:#b91c1c} .sevlabel.amber{color:#b45309} .sevlabel.gray{color:#6b7280}
+  .mailitem { border:1px solid #e5e7eb; border-radius:14px; padding:16px 18px; margin-bottom:10px; }
+  .mailitem.red { border-left:4px solid var(--red); }
+  .mailitem.amber { border-left:4px solid var(--amber); }
+  .mailitem h4 { font-size:15px; font-weight:750; color:#111827; line-height:1.4; }
+  .mailitem p { font-size:13.5px; color:#4b5563; line-height:1.55; margin-top:5px; }
+  .mailitem .tag { display:inline-block; font-size:11px; font-weight:700; color:#6b7280; background:#f3f4f6; border-radius:6px; padding:3px 8px; margin-top:9px; margin-right:6px; }
+  .openbtn { display:inline-flex; align-items:center; gap:6px; margin-top:12px; min-height:44px; padding:0 18px; border-radius:11px; border:none; background:#0d1b2a; color:#fff; font-size:13.5px; font-weight:700; }
+  .openbtn:active { background:#1f3461; }
+  .fyiline { font-size:13px; color:#6b7280; padding:12px 4px 2px; }
+  .mailfoot { padding:14px 24px 20px; border-top:1px solid #e9ecef; font-size:11.5px; color:#9ca3af; line-height:1.6; }
+
+  /* ═══ DASHBOARD VIEW ═══ */
+  #view-dash { background:radial-gradient(ellipse at 20% 0%, #101d33 0%, #060c14 65%); }
+  .dashwrap { max-width:860px; margin:0 auto; padding:22px 16px 90px; }
+  .dashtitle { display:flex; justify-content:space-between; align-items:flex-end; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+  .dashtitle h1 { font-size:22px; font-weight:850; letter-spacing:-.01em; }
+  .dashtitle .sub2 { font-size:12.5px; color:var(--gray-400); margin-top:4px; }
+  .tunebtn { min-height:48px; padding:0 20px; border-radius:12px; border:1px solid var(--orange); background:rgba(232,130,74,.12); color:var(--orange-lt); font-size:14px; font-weight:750; }
+  .tunebtn:active { background:rgba(232,130,74,.28); }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:22px; }
+  .tile { background:var(--navy-mid); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .tile .big { font-size:30px; font-weight:900; letter-spacing:-.02em; }
+  .tile .lbl { font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gray-400); margin-top:2px; }
+  .tile.red .big{color:var(--red)} .tile.amber .big{color:var(--amber)} .tile.gray .big{color:var(--gray-300)} .tile.green .big{color:var(--green)}
+  .dashsec { font-size:11.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--gray-400); margin:20px 2px 10px; }
+  .ditem { background:var(--navy-mid); border:1px solid var(--line); border-radius:16px; margin-bottom:12px; overflow:hidden; }
+  .ditem > button.dhead { display:flex; width:100%; text-align:left; align-items:center; gap:14px; padding:16px 18px; background:none; border:none; color:var(--white); min-height:60px; }
+  .ditem .dtxt { flex:1; }
+  .ditem .dtxt h4 { font-size:15.5px; font-weight:750; line-height:1.35; }
+  .ditem .dtxt .dmeta { font-size:12.5px; color:var(--gray-400); margin-top:4px; }
+  .ditem .chev { color:var(--gray-600); font-size:15px; flex:none; transition:transform .2s; }
+  .ditem.open .chev { transform:rotate(90deg); }
+  .dbody { display:none; padding:2px 18px 18px 42px; }
+  .ditem.open .dbody { display:block; }
+  .why { background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:13.5px; color:var(--gray-300); line-height:1.6; }
+  .why b { color:var(--white); }
+  .quote { margin-top:10px; border-left:3px solid var(--navy-light); padding:2px 0 2px 12px; font-size:13px; color:var(--gray-400); font-style:italic; line-height:1.55; }
+  .dactions { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  .dactions button { min-height:44px; padding:0 16px; border-radius:11px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:var(--gray-300); font-size:13px; font-weight:650; }
+  .dactions button:active { background:rgba(255,255,255,.16); }
+
+  /* ═══ CONTROLS (ADMIN) VIEW ═══ */
+  #view-admin { background:#0b1420; }
+  .adwrap { max-width:820px; margin:0 auto; padding:20px 16px 130px; }
+  .adhero { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .adhero h1 { font-size:21px; font-weight:850; }
+  .adhero .who2 { font-size:12.5px; color:var(--gray-400); margin-top:3px; }
+  .magicbtn { min-height:52px; padding:0 22px; border-radius:13px; border:none; background:var(--orange); color:#1a1206; font-size:15px; font-weight:800; }
+  .magicbtn:active { background:var(--orange-lt); }
+  .adsection { background:var(--navy-mid); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:16px; }
+  .adsection h2 { font-size:16px; font-weight:800; margin-bottom:4px; }
+  .adsection .hint { font-size:12.5px; color:var(--gray-400); margin-bottom:14px; line-height:1.5; }
+  .flabel { display:block; font-size:11px; color:var(--gray-400); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 7px; font-weight:750; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { display:inline-flex; align-items:center; gap:4px; background:var(--navy-light); border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:8px 6px 8px 15px; font-size:14px; min-height:44px; }
+  .chip button { background:none; border:none; color:var(--gray-400); font-size:17px; line-height:1; padding:6px 12px; border-radius:50%; min-height:32px; }
+  .chip button:active { color:var(--red); }
+  .addrow { display:flex; gap:8px; margin-top:10px; }
+  .addrow input { flex:1; min-height:48px; background:#0e1a2e; border:1px solid rgba(255,255,255,.14); color:var(--white); border-radius:12px; padding:10px 14px; font:16px/1.4 'Inter',sans-serif; }
+  .addrow button { min-height:48px; padding:0 20px; border-radius:12px; border:1px solid var(--orange); background:rgba(232,130,74,.12); color:var(--orange-lt); font-size:14px; font-weight:750; }
+  .addrow button:active { background:rgba(232,130,74,.3); }
+  .urgrow { border-top:1px solid var(--line); padding:14px 0; }
+  .urgrow:first-of-type { border-top:none; padding-top:4px; }
+  .urgrow h3 { font-size:14.5px; font-weight:750; color:var(--orange-lt); margin-bottom:8px; }
+  .urgline { display:flex; gap:10px; align-items:flex-start; margin-bottom:8px; }
+  .urgline .dot { margin-top:14px; }
+  .urgline textarea { flex:1; min-height:52px; background:#0e1a2e; border:1px solid rgba(255,255,255,.14); color:var(--gray-300); border-radius:12px; padding:10px 14px; font:14px/1.5 'Inter',sans-serif; resize:vertical; }
+  .routerow { display:flex; justify-content:space-between; gap:12px; align-items:center; border-top:1px solid var(--line); padding:13px 2px; font-size:14px; }
+  .routerow:first-of-type { border-top:none; }
+  .routerow .rc { font-weight:750; color:var(--orange-lt); }
+  .routerow .rv { color:var(--gray-300); text-align:right; font-size:13.5px; line-height:1.5; }
+  .savebar { position:fixed; left:0; right:0; bottom:0; background:rgba(6,12,20,.96); backdrop-filter:blur(14px); border-top:1px solid var(--line); padding:14px 18px; padding-bottom:max(14px, env(safe-area-inset-bottom)); display:none; justify-content:center; gap:16px; align-items:center; z-index:160; }
+  .savebar.show { display:flex; }
+  .savebar .pcount { font-size:13.5px; color:var(--gray-300); }
+  .savebar .reviewbtn { min-height:52px; padding:0 26px; border-radius:13px; border:none; background:var(--orange); color:#1a1206; font-size:15px; font-weight:800; }
+  .banner2 { background:rgba(34,197,94,.1); border:1px solid var(--green); border-radius:12px; padding:12px 16px; font-size:13.5px; color:#d7f5e2; margin-bottom:14px; }
+
+  /* ═══ SAFETY-CHECK MODAL ═══ */
+  .overlay { position:fixed; inset:0; background:rgba(4,8,16,.78); display:flex; align-items:flex-start; justify-content:center; padding:5vh 16px 20px; z-index:300; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .modal { background:#121f36; border:1px solid rgba(255,255,255,.14); border-radius:20px; padding:24px; max-width:640px; width:100%; }
+  .modal h2 { font-size:19px; font-weight:850; margin-bottom:6px; }
+  .modal .msub { font-size:13px; color:var(--gray-400); line-height:1.55; margin-bottom:16px; }
+  .changelist { list-style:none; margin-bottom:16px; }
+  .changelist li { padding:10px 0; border-top:1px solid var(--line); font-size:14px; color:var(--gray-300); }
+  .changelist li:first-child { border-top:none; }
+  .impact { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.4); border-radius:14px; padding:16px 18px; margin-bottom:14px; }
+  .impact .in { font-size:15px; font-weight:800; color:#fecaca; margin-bottom:6px; }
+  .impact p { font-size:13px; color:var(--gray-300); line-height:1.55; }
+  .impact ul { margin:10px 0 2px 18px; font-size:12.5px; color:var(--gray-400); line-height:1.7; }
+  .noimpact { background:rgba(34,197,94,.07); border:1px solid rgba(34,197,94,.35); border-radius:14px; padding:14px 18px; margin-bottom:14px; font-size:13.5px; color:var(--gray-300); line-height:1.55; }
+  .ledger { background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:14px; padding:14px 18px; margin-bottom:18px; }
+  .ledger .ll { font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px; }
+  .ledger .lwho { font-size:14px; font-weight:750; }
+  .ledger .lwhat { font-size:13px; color:var(--gray-300); margin-top:4px; line-height:1.55; }
+  .modalbtns { display:flex; justify-content:flex-end; gap:12px; flex-wrap:wrap; }
+  .modalbtns button { min-height:52px; padding:0 22px; border-radius:13px; font-size:15px; font-weight:750; }
+  .mcancel { border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:var(--gray-300); }
+  .mconfirm { border:none; background:var(--orange); color:#1a1206; font-weight:800; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ DECK ════════════════════ -->
+<div class="view active" id="view-deck">
+  <div id="progress-bar"></div>
+
+  <!-- 1 · Title -->
+  <div class="slide active" style="background:radial-gradient(ellipse at 30% 40%, var(--navy-mid) 0%, #060c14 70%);">
+    <div class="eyebrow a d1">Facility Innovations Group · Email Intelligence · July 2026</div>
+    <div class="title-xl a d2">No balls<br>dropped.</div>
+    <p class="sub a d3" style="margin-top:24px">FIG's email intelligence reads every project inbox, catches what's
+    about to cost money, and tells the right person before it does. And now — the team can steer it themselves.</p>
+  </div>
+
+  <!-- 2 · What it does -->
+  <div class="slide">
+    <div class="eyebrow a d1">What It Does</div>
+    <div class="title-md a d2">It reads everything, so nobody has to.</div>
+    <div class="cards">
+      <div class="card a d2"><div class="num">READS</div><h3>Every project inbox</h3><p>Construction, permitting, interconnection — plus the PMs' own mail. Thousands of emails a month.</p></div>
+      <div class="card a d3"><div class="num">FILTERS</div><h3>The noise never reaches you</h3><p>Vendor spam, auto-replies, routine confirmations — silently set aside.</p></div>
+      <div class="card a d4"><div class="num">FLAGS</div><h3>What's about to cost money</h3><p>Permit denials. Utility delays. Deliveries slipping. Promises going stale with no answer.</p></div>
+      <div class="card a d5"><div class="num">DELIVERS</div><h3>Where people already look</h3><p>A morning email brief, plus instant Teams pings when something is red.</p></div>
+    </div>
+  </div>
+
+  <!-- 3 · The catch -->
+  <div class="slide">
+    <div class="eyebrow a d1">The Catch — Until Now</div>
+    <div class="title-md a d2">Only one person could adjust it.</div>
+    <div class="flow a d3">
+      <div class="step"><b>Someone spots a gap</b>"These vendor order emails are cluttering the brief."</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Write it up, sign it off</b>Days of back-and-forth before anything changes.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Wait on Matt</b>One engineer, editing the system's rules by hand.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Hope nothing broke</b>No way to see what the change actually does before it's live.</div>
+    </div>
+    <div class="risk a d4"><b>The bottleneck is annoying. The risk is worse.</b> Months of careful tuning could be
+    quietly undone by one well-intentioned tweak — and nobody would know until something important slipped through.</div>
+  </div>
+
+  <!-- 4 · What's new -->
+  <div class="slide">
+    <div class="eyebrow a d1">What's New</div>
+    <div class="title-md a d2">Now the team steers it — safely.</div>
+    <div class="cards">
+      <div class="card a d2">
+        <div class="num">01</div>
+        <h3>Plain forms, not code</h3>
+        <p>Brian adds "ignore this vendor" the same way he'd fill out any web form. No engineer in the loop for routine changes.</p>
+      </div>
+      <div class="card a d3">
+        <div class="num">02</div>
+        <h3>A safety check before every save</h3>
+        <p>The system replays the change against ~1,500 real FIG emails from recent weeks and shows exactly what would flip — <i>"these 20 emails we used to flag would now be ignored"</i> — before anyone can hit save.</p>
+      </div>
+      <div class="card a d4">
+        <div class="num">03</div>
+        <h3>Everything on the record</h3>
+        <p>Every change logs who made it, what changed, and when. Six months later, "why did this stop flagging permit rejections?" always has an answer.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 · Demo -->
+  <div class="slide">
+    <div class="eyebrow a d1">See It Work</div>
+    <div class="title-md a d2">The whole loop, end to end.</div>
+    <ul class="script">
+      <li class="a d2"><span class="n">1</span><span><b>The morning email.</b> What lands in your inbox at 6am — two reds, three yellows, and the noise already gone.</span></li>
+      <li class="a d3"><span class="n">2</span><span><b>Tap into the dashboard.</b> Every flagged item with the <i>why</i> behind it — and what to do next.</span></li>
+      <li class="a d4"><span class="n">3</span><span><b>Open the controls.</b> Watch Brian ignore a noisy vendor — and the safety check catch exactly what that would change.</span></li>
+    </ul>
+    <button class="cta a d5" onclick="showView('view-email')">Start the demo →</button>
+    <p class="sub a d5" style="font-size:12.5px;margin-top:16px">Sample data · fully interactive · nothing here touches live systems.</p>
+  </div>
+
+  <div id="counter">1 / 5</div>
+  <div id="swipe-hint">Swipe or tap →</div>
+  <div id="deck-nav">
+    <button id="prev">←</button>
+    <button id="next">→</button>
+  </div>
+</div>
+
+<!-- ════════════════════ EMAIL VIEW ════════════════════ -->
+<div class="view scrollview" id="view-email">
+  <div class="demobar">
+    <button class="backbtn" onclick="showView('view-deck')">← Overview</button>
+    <div class="crumbs"><span class="crumb on">1 · The email</span><span class="sep">→</span><span class="crumb">2 · Dashboard</span><span class="sep">→</span><span class="crumb">3 · The controls</span></div>
+  </div>
+  <div class="mailwrap">
+    <div class="mailcard">
+      <div class="mailhead">
+        <div class="subj">FIG Daily Brief — Mon, Jul 6 · 🔴 2 need action · 🟡 3 to watch</div>
+        <div class="meta">
+          <div class="avatar">EI</div>
+          <div class="fromline"><b>FIG Email Intelligence</b> &lt;intel@facilityig.com&gt;<br>to Chris LeVeck · 6:00 AM</div>
+        </div>
+      </div>
+      <div class="mailbody">
+        <p class="mb-intro">Good morning — 214 project emails came in since Friday. 197 were noise and never reached anyone.
+        Here's what actually matters today:</p>
+
+        <div class="sevgroup">
+          <div class="sevlabel red"><span class="dot red"></span>Needs action today</div>
+          <div class="mailitem red">
+            <h4>QT454 Marietta — permit resubmittal DENIED by the city</h4>
+            <p>The AHJ rejected Friday's resubmittal. A crew is scheduled there Thursday — if this isn't turned around this week, they stand idle.</p>
+            <span class="tag">Permits</span><span class="tag">Owner: Anatoliy</span><span class="tag">Waiting 2 days</span>
+            <br><button class="openbtn" onclick="openDash('qt454')">Open in dashboard →</button>
+          </div>
+          <div class="mailitem red">
+            <h4>Store 1408 — switchgear delivery slipped to Jul 14</h4>
+            <p>Wesco confirmed the slip this morning. Electrical crew is booked for Jul 9 — five idle days unless the crew or the delivery moves.</p>
+            <span class="tag">Schedule &amp; deliveries</span><span class="tag">Owner: Brian + PM</span>
+            <br><button class="openbtn" onclick="openDash('s1408')">Open in dashboard →</button>
+          </div>
+        </div>
+
+        <div class="sevgroup">
+          <div class="sevlabel amber"><span class="dot amber"></span>Keep an eye on</div>
+          <div class="mailitem amber">
+            <h4>Store 1391 — utility wants corrections on the interconnection application</h4>
+            <p>Georgia Power flagged two line items. Not urgent yet — but it gates energization if it sits.</p>
+            <span class="tag">Utility</span><span class="tag">Owner: Anatoliy</span>
+            <br><button class="openbtn" onclick="openDash('s1391')">Open in dashboard →</button>
+          </div>
+          <div class="mailitem amber">
+            <h4>QT492 — Kevin is waiting on a drawing revision answer</h4>
+            <p>Asked Wednesday, no response yet. Field work isn't blocked — but it will be by next week.</p>
+            <span class="tag">Drawings</span><span class="tag">Owner: Kevin / PM</span>
+            <br><button class="openbtn" onclick="openDash('qt492')">Open in dashboard →</button>
+          </div>
+          <div class="mailitem amber">
+            <h4>Parker asked the GC for a pour date — 3 days, no reply</h4>
+            <p>The ask is going stale. A nudge today keeps it off next week's red list.</p>
+            <span class="tag">Promises &amp; follow-ups</span><span class="tag">Owner: Parker</span>
+            <br><button class="openbtn" onclick="openDash('pour')">Open in dashboard →</button>
+          </div>
+        </div>
+
+        <div class="sevgroup">
+          <div class="sevlabel gray"><span class="dot gray"></span>FYI</div>
+          <div class="fyiline">12 routine updates (applications received, sets delivered, scheduled pours) — <a href="#" onclick="openDash('fyi');return false" style="color:#1f3461;font-weight:700">view in dashboard</a>.</div>
+        </div>
+      </div>
+      <div class="mailfoot">
+        You're receiving this because you're on the executive brief. What gets flagged, who gets told, and what counts
+        as urgent are tuned by the team in the Email Intelligence controls.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ DASHBOARD VIEW ════════════════════ -->
+<div class="view scrollview" id="view-dash">
+  <div class="demobar">
+    <button class="backbtn" onclick="showView('view-email')">← The email</button>
+    <div class="crumbs"><span class="crumb">1 · The email</span><span class="sep">→</span><span class="crumb on">2 · Dashboard</span><span class="sep">→</span><span class="crumb">3 · The controls</span></div>
+  </div>
+  <div class="dashwrap">
+    <div class="dashtitle">
+      <div>
+        <h1><span style="color:var(--orange)">FACILITY</span> IG · Email Intelligence</h1>
+        <div class="sub2">Monday, July 6 · watching 3 shared inboxes + 12 people</div>
+      </div>
+      <button class="tunebtn" onclick="showView('view-admin')">⚙ Tune what gets flagged</button>
+    </div>
+
+    <div class="tiles">
+      <div class="tile red"><div class="big">2</div><div class="lbl">Need action</div></div>
+      <div class="tile amber"><div class="big">3</div><div class="lbl">To watch</div></div>
+      <div class="tile gray"><div class="big">12</div><div class="lbl">FYI</div></div>
+      <div class="tile green"><div class="big">197</div><div class="lbl">Noise filtered</div></div>
+    </div>
+
+    <div class="dashsec">🔴 Needs action today</div>
+
+    <div class="ditem" id="di-qt454">
+      <button class="dhead" onclick="toggleDitem('qt454')">
+        <span class="dot red"></span>
+        <span class="dtxt"><h4>QT454 Marietta — permit resubmittal DENIED by the city</h4>
+        <div class="dmeta">Permits &amp; city approvals · Anatoliy · waiting 2 days · crew on site Thursday</div></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="dbody">
+        <div class="why"><b>Why it's red:</b> a denial on a store with a crew scheduled within the week means idle
+          crew cost unless it's turned around now. The system read this from the city's email Friday afternoon:
+          <div class="quote">"…the Automated Review System has DENIED the resubmittal for permit #B26-04412.
+          Corrections to sheets E-2.1 and E-4.0 are required before re-review…"</div>
+        </div>
+        <div class="dactions">
+          <button>Open the email thread</button>
+          <button>Create a Procore task</button>
+          <button>Nudge Anatoliy on Teams</button>
+          <button>Mark handled</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ditem" id="di-s1408">
+      <button class="dhead" onclick="toggleDitem('s1408')">
+        <span class="dot red"></span>
+        <span class="dtxt"><h4>Store 1408 — switchgear delivery slipped to Jul 14</h4>
+        <div class="dmeta">Schedule &amp; deliveries · Brian + PM · confirmed this morning</div></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="dbody">
+        <div class="why"><b>Why it's red:</b> the electrical crew is booked Jul 9 — a five-day gap between crew and
+          material. Either the crew moves or the delivery does; both cost less the sooner someone decides.
+          <div class="quote">"…apologies for the delay — the switchgear for order #849886 is now showing
+          July 14 delivery to Store 1408…"</div>
+        </div>
+        <div class="dactions">
+          <button>Open the email thread</button>
+          <button>Create a Procore task</button>
+          <button>Alert the schedule channel</button>
+          <button>Mark handled</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashsec">🟡 Keep an eye on</div>
+
+    <div class="ditem" id="di-s1391">
+      <button class="dhead" onclick="toggleDitem('s1391')">
+        <span class="dot amber"></span>
+        <span class="dtxt"><h4>Store 1391 — utility wants corrections on the interconnection application</h4>
+        <div class="dmeta">Utility &amp; power company · Anatoliy</div></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="dbody">
+        <div class="why"><b>Why it's yellow:</b> corrections requested on an active application. Not blocking today,
+        but it gates energization if it sits more than a few days.</div>
+        <div class="dactions"><button>Open the email thread</button><button>Mark handled</button></div>
+      </div>
+    </div>
+
+    <div class="ditem" id="di-qt492">
+      <button class="dhead" onclick="toggleDitem('qt492')">
+        <span class="dot amber"></span>
+        <span class="dtxt"><h4>QT492 — Kevin waiting on a drawing revision answer</h4>
+        <div class="dmeta">Drawings &amp; design · Kevin / PM · asked Wednesday</div></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="dbody">
+        <div class="why"><b>Why it's yellow:</b> someone is actively waiting on an answer. It becomes a blocker
+        next week if it goes unanswered.</div>
+        <div class="dactions"><button>Open the email thread</button><button>Nudge on Teams</button><button>Mark handled</button></div>
+      </div>
+    </div>
+
+    <div class="ditem" id="di-pour">
+      <button class="dhead" onclick="toggleDitem('pour')">
+        <span class="dot amber"></span>
+        <span class="dtxt"><h4>Parker asked the GC for a pour date — 3 days, no reply</h4>
+        <div class="dmeta">Promises &amp; follow-ups · Parker</div></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="dbody">
+        <div class="why"><b>Why it's yellow:</b> an open ask past 72 hours with no answer. The system tracks the
+        <i>promise</i>, not just the email — so asks can't quietly go stale.</div>
+        <div class="dactions"><button>Open the email thread</button><button>Draft the nudge</button><button>Mark handled</button></div>
+      </div>
+    </div>
+
+    <div class="dashsec">⚪ FYI — 12 routine updates</div>
+    <div class="ditem" id="di-fyi">
+      <button class="dhead" onclick="toggleDitem('fyi')">
+        <span class="dot gray"></span>
+        <span class="dtxt"><h4>Applications received · sets delivered · scheduled pours</h4>
+        <div class="dmeta">Nothing owed by anyone — kept for the record</div></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="dbody" id="di-fyi-body">
+        <div class="why" style="color:var(--gray-400);font-size:12.5px;line-height:1.8">
+          Store 1416 — interconnection application accepted · QT501 — drawing set delivered ·
+          Store 1388 — pour confirmed Thu · QT454 — fee payment processed · Store 1402 — application received ·
+          + 7 more
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ CONTROLS VIEW ════════════════════ -->
+<div class="view scrollview" id="view-admin">
+  <div class="demobar">
+    <button class="backbtn" onclick="showView('view-dash')">← Dashboard</button>
+    <div class="crumbs"><span class="crumb">1 · The email</span><span class="sep">→</span><span class="crumb">2 · Dashboard</span><span class="sep">→</span><span class="crumb on">3 · The controls</span></div>
+  </div>
+  <div class="adwrap">
+    <div class="adhero">
+      <div>
+        <h1>Email Intelligence — Controls</h1>
+        <div class="who2">Signed in as <b style="color:var(--gray-300)">Brian Cardinal</b> · changes go on the record under your name</div>
+      </div>
+      <button class="magicbtn" id="demoFlowBtn">▶ Watch the safety check</button>
+    </div>
+
+    <div id="adminBanner"></div>
+
+    <div class="adsection">
+      <h2>What we watch</h2>
+      <div class="hint">The inboxes and people the system reads. Add or remove anyone — the safety check will show what that changes.</div>
+      <label class="flabel">Shared inboxes</label>
+      <div class="chips" id="chips-shared"></div>
+      <div class="addrow"><input type="text" id="in-shared" placeholder="mailbox@facilityig.com"><button data-add="shared">Add</button></div>
+      <label class="flabel">People (their inbox + sent mail)</label>
+      <div class="chips" id="chips-people"></div>
+      <div class="addrow"><input type="text" id="in-people" placeholder="person@facilityig.com"><button data-add="people">Add</button></div>
+    </div>
+
+    <div class="adsection">
+      <h2>What counts as urgent</h2>
+      <div class="hint">Plain-English rules the AI follows when it decides red vs. yellow vs. FYI. Edit the words, and it follows the new words.</div>
+      <div id="urgencyRows"></div>
+    </div>
+
+    <div class="adsection">
+      <h2>Who gets told, and how</h2>
+      <div class="hint">Where each kind of flag goes. (Editable in the full product — shown here for the picture.)</div>
+      <div class="routerow"><span class="rc">Permits &amp; city approvals</span><span class="rv">Anatoliy · Teams DM · instantly when red</span></div>
+      <div class="routerow"><span class="rc">Utility &amp; power company</span><span class="rv">Anatoliy · Teams DM · instantly when red</span></div>
+      <div class="routerow"><span class="rc">Schedule &amp; deliveries</span><span class="rv">Brian + PM · alert channel · instantly when red</span></div>
+      <div class="routerow"><span class="rc">Promises &amp; follow-ups</span><span class="rv">Whoever asked · Teams DM · after 24h of silence</span></div>
+      <div class="routerow"><span class="rc">Executive brief</span><span class="rv">Chris &amp; Jeff · email · daily at 6am</span></div>
+    </div>
+
+    <div class="adsection">
+      <h2>Always flag / never bother</h2>
+      <div class="hint">Words that always get through, and senders that never do. This is where "ignore that noisy vendor" happens.</div>
+      <label class="flabel">Always flag — keywords</label>
+      <div class="chips" id="chips-keywords"></div>
+      <div class="addrow"><input type="text" id="in-keywords" placeholder="e.g. rejection"><button data-add="keywords">Add</button></div>
+      <label class="flabel">Never bother — ignored senders</label>
+      <div class="chips" id="chips-ignore"></div>
+      <div class="addrow"><input type="text" id="in-ignore" placeholder="@vendor.com"><button data-add="ignore">Add</button></div>
+    </div>
+  </div>
+
+  <div class="savebar" id="savebar">
+    <span class="pcount" id="pcount"></span>
+    <button class="reviewbtn" id="reviewBtn">Run the safety check</button>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+/* ═══ View switching ═══ */
+function showView(id){
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  const sv = document.getElementById(id);
+  if (sv.classList.contains('scrollview')) sv.scrollTop = 0;
+}
+function openDash(itemId){
+  showView('view-dash');
+  if (typeof expandDashItem === 'function') expandDashItem(itemId);
+}
+
+/* ═══ Deck nav: buttons + swipe + arrows ═══ */
+const slides = [...document.querySelectorAll('#view-deck .slide')];
+let si = 0;
+function go(n){
+  si = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((s, k) => s.classList.toggle('active', k === si));
+  document.getElementById('counter').textContent = (si + 1) + ' / ' + slides.length;
+  document.getElementById('progress-bar').style.width = ((si + 1) / slides.length * 100) + '%';
+}
+document.getElementById('next').onclick = () => go(si + 1);
+document.getElementById('prev').onclick = () => go(si - 1);
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('view-deck').classList.contains('active')) return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(si + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(si - 1);
+});
+let tx0 = null, ty0 = null;
+const deckEl = document.getElementById('view-deck');
+deckEl.addEventListener('touchstart', e => { tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY; }, { passive: true });
+deckEl.addEventListener('touchend', e => {
+  if (tx0 === null) return;
+  const dx = e.changedTouches[0].clientX - tx0, dy = e.changedTouches[0].clientY - ty0;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) go(si + (dx < 0 ? 1 : -1));
+  tx0 = ty0 = null;
+}, { passive: true });
+go(0);
+</script>
+<script>
+/* ═══ Dashboard: expand/collapse items ═══ */
+function toggleDitem(id){
+  const el = document.getElementById('di-' + id);
+  if (el) el.classList.toggle('open');
+}
+function expandDashItem(id){
+  document.querySelectorAll('.ditem.open').forEach(d => d.classList.remove('open'));
+  const el = document.getElementById('di-' + id);
+  if (el){ el.classList.add('open'); setTimeout(() => el.scrollIntoView({ behavior:'smooth', block:'center' }), 80); }
+}
+
+/* ═══ Controls: sample data + pending-change tracking ═══ */
+const $$ = id => document.getElementById(id);
+const escp = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const DATA = {
+  shared:   ['construction@facilityig.com','permitting@facilityig.com','interconnection@facilityig.com'],
+  people:   ['bcardinal@','plunsford@','cbaez@','azeltser@','kevans@','efrazier@','+ 7 more'],
+  keywords: ['permit','rejection','AHJ','interconnection','PTO','resubmit','RFI','approval'],
+  ignore:   ['@fyxer.com','no-reply@email.claude.com','MSSecurity-noreply@microsoft.com'],
+};
+const LIST_LABELS = {
+  shared:'shared inboxes', people:'watched people',
+  keywords:'the always-flag keywords', ignore:'the ignored senders',
+};
+const SCORING_LISTS = ['shared','people','keywords','ignore'];
+
+const URGENCY = [
+  { cat:'Permits & city approvals',
+    red:'A denial or rejection on a store with a crew scheduled soon, or an approval stuck past its promised date.',
+    yellow:'A correction we owe the city, or a fee holding up review.' },
+  { cat:'Schedule & deliveries',
+    red:'A delivery slip or missed date that leaves a crew idle within ~48 hours.',
+    yellow:'A quote, order, or delivery that must move this week to protect the schedule.' },
+  { cat:'Promises & follow-ups',
+    red:'An unanswered ask past 24 hours that is blocking a near-term store.',
+    yellow:'An open ask waiting on a specific person this week.' },
+];
+
+let pending = [];   // { desc, scoring }
+
+function renderChips(){
+  for (const key of Object.keys(DATA)){
+    $$('chips-' + key).innerHTML = DATA[key].map(v =>
+      `<span class="chip">${escp(v)}<button data-del="${key}" data-val="${escp(v)}" aria-label="remove">×</button></span>`
+    ).join('');
+  }
+  document.querySelectorAll('[data-del]').forEach(b => {
+    b.onclick = () => {
+      const key = b.getAttribute('data-del'), val = b.getAttribute('data-val');
+      if (val.startsWith('+ ')) return;
+      const idx = DATA[key].indexOf(val);
+      if (idx > -1) DATA[key].splice(idx, 1);
+      pending.push({ desc:`Removed “${val}” from ${LIST_LABELS[key]}`, scoring:SCORING_LISTS.includes(key) });
+      renderChips(); refreshBar();
+    };
+  });
+}
+function renderUrgency(){
+  $$('urgencyRows').innerHTML = URGENCY.map((u, i) => `
+    <div class="urgrow">
+      <h3>${escp(u.cat)}</h3>
+      <div class="urgline"><span class="dot red"></span><textarea data-urg="${i}" data-band="red">${escp(u.red)}</textarea></div>
+      <div class="urgline"><span class="dot amber"></span><textarea data-urg="${i}" data-band="yellow">${escp(u.yellow)}</textarea></div>
+    </div>`).join('');
+  document.querySelectorAll('[data-urg]').forEach(t => {
+    t.onchange = () => {
+      const i = +t.getAttribute('data-urg'), band = t.getAttribute('data-band');
+      URGENCY[i][band] = t.value;
+      pending.push({ desc:`Rewrote the “${band}” rule for ${URGENCY[i].cat}`, scoring:false });
+      refreshBar();
+    };
+  });
+}
+document.querySelectorAll('[data-add]').forEach(b => {
+  b.onclick = () => {
+    const key = b.getAttribute('data-add');
+    const input = $$('in-' + key);
+    const val = input.value.trim();
+    if (!val || DATA[key].includes(val)) return;
+    DATA[key].push(val);
+    pending.push({ desc:`Added “${val}” to ${LIST_LABELS[key]}`, scoring:SCORING_LISTS.includes(key) });
+    input.value = '';
+    renderChips(); refreshBar();
+  };
+});
+function refreshBar(){
+  const bar = $$('savebar');
+  if (pending.length === 0){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  $$('pcount').textContent = pending.length + ' unsaved change' + (pending.length === 1 ? '' : 's');
+}
+
+/* ═══ Safety check modal ═══ */
+function openSafetyCheck(){
+  if (!pending.length) return;
+  const touchesScoring = pending.some(p => p.scoring);
+  const changes = pending.map(p => `<li>${escp(p.desc)}</li>`).join('');
+  const impact = touchesScoring ? `
+    <div class="impact">
+      <div class="in">20 emails we used to flag would now be ignored.</div>
+      <p>Before saving, the system replayed your change against 1,470 real FIG emails from recent weeks.
+      1,450 keep the same decision. These would flip:</p>
+      <ul>
+        <li>"RE: Bulk Wire RFQ — Wesco Order #842351" — roger.crane@wescodist.com</li>
+        <li>"RE: QT492 — Material Needed" — roger.crane@wescodist.com</li>
+        <li>"RE: Wesco Order #849886 — Store 1416" — roger.crane@wescodist.com</li>
+        <li>+ 17 more like these</li>
+      </ul>
+    </div>` : `
+    <div class="noimpact">This change rewrites guidance, not filters — no existing decisions flip.
+    The new wording takes effect on tomorrow's email.</div>`;
+  $$('modalRoot').innerHTML = `
+    <div class="overlay">
+      <div class="modal">
+        <h2>Safety check</h2>
+        <div class="msub">Here's what this change would actually do — shown before anything saves.</div>
+        <ul class="changelist">${changes}</ul>
+        ${impact}
+        <div class="ledger">
+          <div class="ll">Goes on the record as</div>
+          <div class="lwho">Brian Cardinal · Monday, July 6, 2026 · 2:41 PM</div>
+          <div class="lwhat">${pending.map(p => escp(p.desc)).join(' · ')}</div>
+        </div>
+        <div class="modalbtns">
+          <button class="mcancel" id="mCancel">Go back</button>
+          <button class="mconfirm" id="mConfirm">Looks right — save it</button>
+        </div>
+      </div>
+    </div>`;
+  $$('mCancel').onclick = () => { $$('modalRoot').innerHTML = ''; };
+  $$('mConfirm').onclick = () => {
+    $$('modalRoot').innerHTML = '';
+    pending = [];
+    refreshBar();
+    $$('adminBanner').innerHTML = `<div class="banner2"><b>Saved — and on the record.</b>
+      Logged under Brian Cardinal, July 6 at 2:41 PM. Anyone can see who changed what, forever.</div>`;
+    const w = $$('adminBanner'); w.scrollIntoView({ behavior:'smooth', block:'center' });
+  };
+}
+$$('reviewBtn').onclick = openSafetyCheck;
+
+/* One-tap demo: add the noisy vendor, then run the safety check */
+$$('demoFlowBtn').onclick = () => {
+  if (!DATA.ignore.includes('@wescodist.com')){
+    DATA.ignore.push('@wescodist.com');
+    pending.push({ desc:'Added “@wescodist.com” to the ignored senders', scoring:true });
+    renderChips(); refreshBar();
+  }
+  $$('chips-ignore').scrollIntoView({ behavior:'smooth', block:'center' });
+  setTimeout(openSafetyCheck, 600);
+};
+
+renderChips();
+renderUrgency();
+refreshBar();
+</script>
+</body>
+</html>
